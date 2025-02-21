@@ -56,7 +56,7 @@ python -m venv venv
 - Windows:
 
 ```terminal
-    venv/Scripts/activate
+venv/Scripts/activate
 ```
 
 - Linux/Mac:
