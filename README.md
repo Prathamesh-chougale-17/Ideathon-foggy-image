@@ -14,13 +14,7 @@ This project implements a dark channel prior dehazing algorithm combined with ad
 #### Windows Users (using Git Bash)
 
 1. Open Git Bash in the project directory
-2. Make the venvbuilder script executable:
-
-```bash
-chmod +x venvbuilder.sh
-```
-
-3. Create and activate the virtual environment:
+2. Create and activate the virtual environment:
 
 ```bash
 ./venvbuilder.sh
