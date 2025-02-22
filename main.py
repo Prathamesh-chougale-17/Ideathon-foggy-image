@@ -1,6 +1,36 @@
 import cv2
 import numpy as np
 from ultralytics import YOLO
+from flask import Flask, request
+import requests
+import base64
+from io import BytesIO
+
+# Flask app initialization
+app = Flask(__name__)
+
+# Configuration
+CAMERA_ID = "cam1"  # Change this for different cameras
+DETECTION_SERVER_URL = "http://localhost:3000/api/detection"
+
+def encode_frame_to_base64(frame):
+    """Convert frame to base64 string"""
+    _, buffer = cv2.imencode('.jpg', frame)
+    return base64.b64encode(buffer).decode('utf-8')
+
+def send_detection(frame, camera_id):
+    """Send POST request with detection data"""
+    try:
+        payload = {
+            "cip": camera_id,
+            "image": encode_frame_to_base64(frame),
+            "isimp": False
+        }
+        response = requests.post(DETECTION_SERVER_URL, json=payload)
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Error sending detection: {e}")
+        return False
 
 def get_dark_channel(img, size=15):
     """Get dark channel prior"""
@@ -105,8 +135,20 @@ while True:
     # Run YOLO detection
     results = model(processed_frame, stream=True)
     
+    person_detected = False
     # Draw results
     for r in results:
+        boxes = r.boxes
+        for box in boxes:
+            # Check if detection is person (class 0 in COCO dataset)
+            if box.cls[0] == 0:  # person class
+                person_detected = True
+                # Get the region of the detected person
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                person_frame = processed_frame[y1:y2, x1:x2]
+                if person_frame.size > 0:  # Check if crop is valid
+                    send_detection(person_frame, CAMERA_ID)
+        
         annotated_frame = r.plot()
         cv2.imshow('Enhanced Detection', annotated_frame)
     
