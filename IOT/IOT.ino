@@ -37,13 +37,13 @@ void loop()
         lcd.setCursor(0, 0);
 
         // # Check for 'result'
-        if (result == "false")
+        if (result == "0")
         {
-            lcd.print("Alert:");
-            lcd.setCursor(0, 1);
-            lcd.print("Fire Detected");
+               lcd.print("Fire Alert");
+    lcd.setCursor(0, 1);
+    lcd.print("System Enabled");
         }
-        else if (result == "true")
+        else if (result == "1")
         {
             lcd.print("High Alert:");
             lcd.setCursor(0, 1);

@@ -13,9 +13,9 @@ from datetime import datetime
 app = Flask(__name__)
 
 # Configuration
-CAMERA_ID = "cam1"  # Change this for different cameras
+CAMERA_ID = "650c3c5e5b3f3c6d1a1e4e5b"  # Change this for different cameras
 DETECTION_SERVER_URL = "https://narad-kdmq.onrender.com/api/v1/notification"
-DETECTION_COOLDOWN = 5  # seconds between detections
+DETECTION_COOLDOWN = 12  # seconds between detections
 last_detection_time = 0
 
 OUTPUT_DIR = "output"
@@ -27,7 +27,7 @@ def encode_frame_to_base64(frame):
     """Convert frame to base64 string"""
     _, buffer = cv2.imencode('.jpg', frame)
     base64_string = base64.b64encode(buffer).decode('utf-8')
-    return f"data:image/jpeg;base64,{base64_string}"
+    return f"{base64_string}"
 
 def send_detection(frame, camera_id):
     """Send POST request with detection data"""
