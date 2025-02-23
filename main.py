@@ -6,15 +6,22 @@ import requests
 import base64
 from io import BytesIO
 import time
+import os
+from datetime import datetime
 
 # Flask app initialization
 app = Flask(__name__)
 
 # Configuration
 CAMERA_ID = "cam1"  # Change this for different cameras
-DETECTION_SERVER_URL = "http://localhost:3000/api/detection"
+DETECTION_SERVER_URL = "https://narad-kdmq.onrender.com/api/v1/notification"
 DETECTION_COOLDOWN = 5  # seconds between detections
 last_detection_time = 0
+
+OUTPUT_DIR = "output"
+if not os.path.exists(OUTPUT_DIR):
+    os.makedirs(OUTPUT_DIR)
+    os.makedirs(os.path.join(OUTPUT_DIR, "images"))
 
 def encode_frame_to_base64(frame):
     """Convert frame to base64 string"""
@@ -33,10 +40,9 @@ def send_detection(frame, camera_id):
         
     try:
         payload = {
-            "cip": camera_id,
+            "cam_id": camera_id,
             "image": encode_frame_to_base64(frame),
-            "isimp": False,
-            "imageFormat": "jpeg"
+            "is_person": False,
         }
         response = requests.post(DETECTION_SERVER_URL, json=payload)
         if response.status_code == 200:
@@ -131,6 +137,19 @@ def enhance_image(img):
     
     return enhanced
 
+def save_detection_result(has_person):
+    """Save detection result to result.txt"""
+    with open(os.path.join(OUTPUT_DIR, "result.txt"), "w") as f:
+        f.write(str(has_person).lower())
+
+def save_annotated_image(frame):
+    """Save annotated image with timestamp"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"person_detected_{timestamp}.jpg"
+    filepath = os.path.join(OUTPUT_DIR, "images", filename)
+    cv2.imwrite(filepath, frame)
+    return filepath
+
 # Load YOLO model
 model = YOLO("yolo12n.pt")
 
@@ -158,13 +177,20 @@ while True:
             # Check if detection is person (class 0 in COCO dataset)
             if box.cls[0] == 0:  # person class
                 person_detected = True
-                break  # Found at least one person
+                break
+        
+        annotated_frame = r.plot()  # Get annotated frame with all detections
         
         if person_detected:
-            annotated_frame = r.plot()  # Get annotated frame with all detections
+            # Save detection result
+            save_detection_result(True)
+            # Save annotated image
+            image_path = save_annotated_image(annotated_frame)
+            # Send detection to API
             send_detection(annotated_frame, CAMERA_ID)
             cv2.imshow('Enhanced Detection', annotated_frame)
         else:
+            save_detection_result(False)
             cv2.imshow('Enhanced Detection', processed_frame)
     
     if cv2.waitKey(1) & 0xFF == ord('q'):

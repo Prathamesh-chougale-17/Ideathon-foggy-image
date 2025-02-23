@@ -15,7 +15,7 @@ void setup()
     digitalWrite(2, HIGH);
     delay(1000);
     lcd.setCursor(0, 0);
-    lcd.print("Face Spoofing");
+    lcd.print("Fire Alert");
     lcd.setCursor(0, 1);
     lcd.print("System Enabled");
     delay(3000);
@@ -37,13 +37,17 @@ void loop()
         lcd.setCursor(0, 0);
 
         // # Check for 'result'
-        if (result == "Spoof")
+        if (result == "false")
         {
-            lcd.print("Face Spoofing");
+            lcd.print("Alert:");
+            lcd.setCursor(0, 1);
+            lcd.print("Fire Detected");
         }
-        else if (result == "Real")
+        else if (result == "true")
         {
-            lcd.print("Real Face");
+            lcd.print("High Alert:");
+            lcd.setCursor(0, 1);
+            lcd.print("Human Detected");
         }
         else
         {
