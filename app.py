@@ -92,7 +92,7 @@ model = YOLO("yolo12n.pt")
 url = "http://192.168.137.71:8080/video"
 
 # For webcam feed
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture("./fog1.jpg")
 
 while True:
     ret, frame = cap.read()

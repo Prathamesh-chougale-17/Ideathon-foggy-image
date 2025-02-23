@@ -5,6 +5,7 @@ from flask import Flask, request
 import requests
 import base64
 from io import BytesIO
+import time
 
 # Flask app initialization
 app = Flask(__name__)
@@ -12,22 +13,36 @@ app = Flask(__name__)
 # Configuration
 CAMERA_ID = "cam1"  # Change this for different cameras
 DETECTION_SERVER_URL = "http://localhost:3000/api/detection"
+DETECTION_COOLDOWN = 5  # seconds between detections
+last_detection_time = 0
 
 def encode_frame_to_base64(frame):
     """Convert frame to base64 string"""
     _, buffer = cv2.imencode('.jpg', frame)
-    return base64.b64encode(buffer).decode('utf-8')
+    base64_string = base64.b64encode(buffer).decode('utf-8')
+    return f"data:image/jpeg;base64,{base64_string}"
 
 def send_detection(frame, camera_id):
     """Send POST request with detection data"""
+    global last_detection_time
+    current_time = time.time()
+    
+    # Check if enough time has passed since last detection
+    if current_time - last_detection_time < DETECTION_COOLDOWN:
+        return False
+        
     try:
         payload = {
             "cip": camera_id,
             "image": encode_frame_to_base64(frame),
-            "isimp": False
+            "isimp": False,
+            "imageFormat": "jpeg"
         }
         response = requests.post(DETECTION_SERVER_URL, json=payload)
-        return response.status_code == 200
+        if response.status_code == 200:
+            last_detection_time = current_time
+            return True
+        return False
     except Exception as e:
         print(f"Error sending detection: {e}")
         return False
@@ -143,14 +158,14 @@ while True:
             # Check if detection is person (class 0 in COCO dataset)
             if box.cls[0] == 0:  # person class
                 person_detected = True
-                # Get the region of the detected person
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                person_frame = processed_frame[y1:y2, x1:x2]
-                if person_frame.size > 0:  # Check if crop is valid
-                    send_detection(person_frame, CAMERA_ID)
+                break  # Found at least one person
         
-        annotated_frame = r.plot()
-        cv2.imshow('Enhanced Detection', annotated_frame)
+        if person_detected:
+            annotated_frame = r.plot()  # Get annotated frame with all detections
+            send_detection(annotated_frame, CAMERA_ID)
+            cv2.imshow('Enhanced Detection', annotated_frame)
+        else:
+            cv2.imshow('Enhanced Detection', processed_frame)
     
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
